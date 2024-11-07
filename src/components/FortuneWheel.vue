@@ -136,12 +136,11 @@ const drawWheel = () => {
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 3;
 
-    // Tronquer le texte à 15 caractères et ajouter "..." si nécessaire
     let labelText =
-      item.label.length > 15 ? item.label.substring(0, 15) + "..." : item.label;
+      item.label.length > 13 ? item.label.substring(0, 13) + "..." : item.label;
 
-    ctx.strokeText(labelText, 20, 8);
-    ctx.fillText(labelText, 20, 8);
+    ctx.strokeText(labelText, 60, 8);
+    ctx.fillText(labelText, 60, 8);
     ctx.restore();
   });
 
