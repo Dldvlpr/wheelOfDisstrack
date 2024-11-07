@@ -1,13 +1,6 @@
 <template>
   <div class="wheel-container">
-    <div class="wheel-outer">
-      <canvas ref="canvas" :width="size" :height="size"></canvas>
-      <button :class="['spin-button', { disabled: isSpinning }]" @click="spin">
-        SPIN
-      </button>
-    </div>
     <div class="volume-control">
-      <label for="volume">Volume :</label>
       <input
         id="volume"
         v-model.number="volume"
@@ -15,7 +8,19 @@
         min="0"
         max="1"
         step="0.01"
+        orient="vertical"
       />
+      <label for="volume">Volume</label>
+    </div>
+
+    <div class="wheel-outer">
+      <canvas
+        ref="canvas"
+        :width="size"
+        :height="size"
+        :class="{ disabled: isSpinning }"
+        @click="spin"
+      ></canvas>
     </div>
   </div>
 </template>
@@ -41,45 +46,59 @@ let targetRotation = 0;
 
 const volume = ref(1);
 
-const tickSound = new Audio("/sound/click.mp3");
-tickSound.preload = "auto";
-tickSound.volume = volume.value;
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-// const spinButtonImage = "/images/spin-button.png";
-// const imageStyle = computed(() => {
-//   const degrees = (-rotation.value * 180) / Math.PI;
-//   return {
-//     transform: `translate(-50%, -50%) rotate(${degrees}deg)`,
-//   };
-// });
+const gainNode = audioContext.createGain();
+gainNode.gain.value = volume.value;
+gainNode.connect(audioContext.destination);
+
+const loadAudio = async (url) => {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  return audioBuffer;
+};
+
+import tickSoundSrc from "@/assets/sound/click.mp3";
+let tickSoundBuffer = null;
+
+loadAudio(tickSoundSrc).then((buffer) => {
+  tickSoundBuffer = buffer;
+});
 
 const sounds = ref({});
 
 watchEffect(() => {
   sounds.value = {};
-  props.items.forEach((item) => {
+  const promises = props.items.map(async (item) => {
     if (item.sound) {
-      const audio = new Audio(item.sound);
-      audio.preload = "auto";
-      audio.volume = volume.value;
-      sounds.value[item.label] = audio;
-
-      audio.onerror = (e) => {
-        console.error(
-          `Erreur lors du chargement du son pour ${item.label}:`,
-          e
-        );
-      };
+      const audioBuffer = await loadAudio(item.sound);
+      sounds.value[item.label] = audioBuffer;
     }
   });
+  Promise.all(promises);
 });
 
 watch(volume, (newVolume) => {
-  tickSound.volume = newVolume;
-  Object.values(sounds.value).forEach((audio) => {
-    audio.volume = newVolume;
-  });
+  gainNode.gain.value = newVolume;
+  //  playTickSound();
 });
+
+const playTickSound = () => {
+  if (tickSoundBuffer) {
+    const source = audioContext.createBufferSource();
+    source.buffer = tickSoundBuffer;
+    source.connect(gainNode);
+    source.start(0);
+  }
+};
+
+const playSound = (audioBuffer) => {
+  const source = audioContext.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(gainNode);
+  source.start(0);
+};
 
 const drawArrow = (ctx, centerX, centerY) => {
   const arrowSize = 30;
@@ -111,20 +130,15 @@ const drawWheel = () => {
 
   ctx.clearRect(0, 0, size, size);
 
-  ctx.fillStyle = "#1a1a1a";
-  ctx.fillRect(0, 0, size, size);
-
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-  ctx.fillStyle = "#2a2a2a";
-  ctx.fill();
-  ctx.stroke();
-
   if (props.items.length === 0) {
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Ajoutez des items à la roue", centerX, centerY);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#2a2a2a";
+    ctx.fill();
+    ctx.strokeStyle = "#1a1a1a";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
     return;
   }
 
@@ -167,8 +181,6 @@ const animate = (currentTime) => {
   if (!startTime) startTime = currentTime;
   const elapsed = currentTime - startTime;
 
-  const degreesPerItem = 360 / props.items.length;
-
   if (elapsed < spinDuration) {
     const easing = (t) => {
       return 1 - Math.pow(1 - t, 3);
@@ -177,20 +189,17 @@ const animate = (currentTime) => {
     const progress = easing(elapsed / spinDuration);
     rotation.value = progress * targetRotation;
 
+    const degreesPerItem = 360 / props.items.length;
     const normalizedRotation =
-      ((((rotation.value * 180) / Math.PI) % 360) + 360) % 360;
-    const currentSegment =
-      Math.floor(normalizedRotation / degreesPerItem) % props.items.length;
+      ((((-rotation.value * 180) / Math.PI) % 360) + 360) % 360;
+    const currentSegment = Math.floor(normalizedRotation / degreesPerItem);
 
     if (currentSegment !== lastSegment) {
       const timeSinceLastTick = currentTime - lastTickTime;
-
       if (timeSinceLastTick > 75) {
-        tickSound.currentTime = 0;
-        tickSound.play();
+        playTickSound();
         lastTickTime = currentTime;
       }
-
       lastSegment = currentSegment;
     }
 
@@ -198,18 +207,20 @@ const animate = (currentTime) => {
     animationFrameId = requestAnimationFrame(animate);
   } else {
     isSpinning.value = false;
+    canvas.value.classList.remove("disabled");
+
     rotation.value = targetRotation;
     drawWheel();
 
+    const degreesPerItem = 360 / props.items.length;
     const normalizedRotation =
-      ((((rotation.value * 180) / Math.PI) % 360) + 360) % 360;
+      ((((-rotation.value * 180) / Math.PI) % 360) + 360) % 360;
     const winningIndex =
       Math.floor(normalizedRotation / degreesPerItem) % props.items.length;
 
     const winningItem = props.items[winningIndex];
     if (winningItem.sound && sounds.value[winningItem.label]) {
-      sounds.value[winningItem.label].currentTime = 0;
-      sounds.value[winningItem.label].play();
+      playSound(sounds.value[winningItem.label]);
     }
   }
 };
@@ -218,6 +229,8 @@ const spin = () => {
   if (isSpinning.value || props.items.length === 0) return;
 
   isSpinning.value = true;
+  canvas.value.classList.add("disabled");
+
   startTime = null;
   lastSegment = null;
   lastTickTime = 0;
@@ -253,26 +266,36 @@ const spin = () => {
 };
 
 onMounted(() => {
-  tickSound.volume = volume.value;
+  gainNode.gain.value = volume.value;
   drawWheel();
+
+  const volumeControl = document.querySelector(
+    '.volume-control input[type="range"]'
+  );
+  if (volumeControl) {
+    volumeControl.style.setProperty(
+      "--volume-percentage",
+      `${volume.value * 100}%`
+    );
+  }
 });
 </script>
 
 <style scoped>
 .wheel-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 20px;
-  background-color: #1a1a1a;
-  min-height: 100vh;
   justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
 }
 
 .wheel-outer {
   position: relative;
-  width: 500px;
-  height: 500px;
+  width: min(600px, 80vh);
+  height: min(600px, 80vh);
   margin: 0 auto;
 }
 
@@ -280,47 +303,108 @@ canvas {
   position: absolute;
   top: 0;
   left: 0;
-}
-
-.spin-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100px;
-  height: 100px;
-  background-color: #ffd700;
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: bold;
-  border: none;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
+  background: transparent;
   cursor: pointer;
-  box-shadow: 0 0 10px #ffd700;
-  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.spin-button:hover {
-  transform: translate(-50%, -50%) scale(1.05);
-  box-shadow: 0 0 20px #ffd700;
-}
-
-.spin-button:active {
-  transform: translate(-50%, -50%) scale(0.95);
-}
-
-.spin-button.disabled {
-  opacity: 0.7;
+canvas.disabled {
   cursor: not-allowed;
 }
 
 .volume-control {
-  margin-top: 20px;
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px 8px;
+  border-radius: 20px;
+  z-index: 20;
+  height: 200px;
+  width: 30px;
+}
+
+.volume-control label {
   color: #ffffff;
+  font-size: 10px;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: auto;
+  padding-bottom: 5px;
 }
 
 .volume-control input[type="range"] {
-  width: 200px;
-  margin-left: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  transform: rotate(-90deg);
+  margin: 50px 0;
+}
+
+.volume-control input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    to right,
+    #ffffff var(--volume-percentage, 50%),
+    rgba(255, 255, 255, 0.1) var(--volume-percentage, 50%)
+  );
+  border-radius: 3px;
+}
+
+.volume-control input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    to right,
+    #ffffff var(--volume-percentage, 50%),
+    rgba(255, 255, 255, 0.1) var(--volume-percentage, 50%)
+  );
+  border-radius: 3px;
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -4.5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.volume-control input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .volume-control {
+    left: 10px;
+    padding: 15px 8px;
+  }
+
+  .volume-control input[type="range"] {
+    height: 100px;
+  }
 }
 </style>
