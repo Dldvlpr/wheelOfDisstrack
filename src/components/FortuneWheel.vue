@@ -26,7 +26,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from "vue";
+import { ref, onMounted, watch, nextTick, defineEmits } from "vue";
+
+const emit = defineEmits(["spin-end"]);
 
 const props = defineProps({
   items: {
@@ -248,6 +250,7 @@ const animate = (currentTime) => {
 
     const winningIndex = getWinningIndex(rotation.value);
     const winningItem = props.items[winningIndex];
+    emit("spin-end", winningItem);
     if (winningItem?.sound && sounds.value[winningItem.label]) {
       playSound(sounds.value[winningItem.label]);
     }
@@ -264,7 +267,7 @@ const spin = () => {
   lastSegment = null;
   lastTickTime = 0;
 
-  const minSpins = 8;
+  const minSpins = 6;
   const maxSpins = 12;
   const randomSpins = minSpins + Math.random() * (maxSpins - minSpins);
   const baseRotation = Math.PI * 2 * randomSpins;

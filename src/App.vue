@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <main class="main-content">
-      <FortuneWheel :items="items" />
+      <FortuneWheel :items="items" @spin-end="onSpinEnd" />
 
       <div class="sidebar">
         <div class="upload-button" @click="triggerFileSelect">
@@ -9,13 +9,16 @@
           <span>Add Sound</span>
         </div>
         <div ref="filesContainer" class="files-list">
-          <div v-for="(item, index) in items" :key="index" class="file-item">
+          <div
+            v-for="(item, index) in items"
+            :key="index"
+            :class="['file-item', { selected: item === selectedItem }]"
+          >
             <div
               class="file-color"
               :style="{ backgroundColor: item.color }"
             ></div>
             <span class="file-name">{{ item.label }}</span>
-            <!-- Bouton de suppression -->
             <button class="delete-button" @click="removeItem(index)">×</button>
           </div>
         </div>
@@ -37,6 +40,7 @@ import { ref } from "vue";
 import FortuneWheel from "@/components/FortuneWheel.vue";
 
 const items = ref([]);
+const selectedItem = ref(null);
 const fileInput = ref(null);
 const filesContainer = ref(null);
 
@@ -92,6 +96,10 @@ const onFileChange = (event) => {
 
 const removeItem = (index) => {
   items.value.splice(index, 1);
+};
+
+const onSpinEnd = (item) => {
+  selectedItem.value = item;
 };
 </script>
 
@@ -230,6 +238,23 @@ body {
 }
 
 .delete-button:hover {
+  color: #ff4d4d;
+}
+
+.file-item.selected {
+  background-color: var(--accent-color);
+  color: #fff;
+}
+
+.file-item.selected .file-name {
+  color: #fff;
+}
+
+.file-item.selected .delete-button {
+  color: #fff;
+}
+
+.file-item.selected .delete-button:hover {
   color: #ff4d4d;
 }
 
