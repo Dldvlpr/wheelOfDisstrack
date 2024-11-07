@@ -32,6 +32,111 @@
         />
       </div>
     </main>
+
+    <footer>
+      <p class="disclaimer" @click="showCGUModal = true">
+        Avertissement : Ce site est un outil temporaire et n'enregistre aucun
+        contenu. Toute responsabilité en cas d'utilisation abusive ou illégale
+        incombe à l'utilisateur. Les créateurs du site déclinent toute
+        responsabilité en cas de non-respect des droits d'auteur ou des lois en
+        vigueur.
+      </p>
+    </footer>
+
+    <!-- Modal d'introduction -->
+    <div v-if="showIntroModal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Bienvenue sur la Roue des Sons!</h2>
+        <div class="modal-body">
+          <div class="intro-step">
+            <h3>1. Ajoutez vos sons</h3>
+            <p>
+              Cliquez sur le bouton <strong>"Add Sound"</strong> pour importer
+              vos fichiers audio.
+            </p>
+          </div>
+
+          <div class="intro-step">
+            <h3>2. Faites tourner la roue</h3>
+            <p>
+              Cliquez sur la roue pour la faire tourner. Le son sélectionné sera
+              joué automatiquement.
+            </p>
+          </div>
+
+          <div class="intro-step">
+            <h3>3. Gérez vos sons</h3>
+            <p>
+              Retrouvez tous vos sons dans la liste à droite. Le son sélectionné
+              sera mis en évidence.
+            </p>
+          </div>
+
+          <div class="intro-note">
+            <p>
+              Note : Pour consulter les conditions générales d'utilisation,
+              cliquez sur "Avertissement" en bas de page.
+            </p>
+          </div>
+        </div>
+        <button class="start-button" @click="showIntroModal = false">
+          Commencer
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal CGU existante -->
+    <div
+      v-if="showCGUModal"
+      class="modal-overlay"
+      @click.self="showCGUModal = false"
+    >
+      <!-- Contenu CGU existant -->
+      <div class="modal-content">
+        <h2>Conditions Générales d'Utilisation</h2>
+        <div class="modal-body">
+          <p><strong>1. Objet</strong></p>
+          <p>
+            Le présent site est un outil de création sonore permettant aux
+            utilisateurs d’importer des sons temporaires et de les utiliser de
+            manière éphémère. Aucun fichier ou contenu n’est sauvegardé ni
+            conservé après la fermeture de la page.
+          </p>
+          <p><strong>2. Responsabilité de l'Utilisateur</strong></p>
+          <p>
+            L’utilisateur est seul responsable du contenu qu’il importe et des
+            actions réalisées sur le site. En utilisant ce service,
+            l’utilisateur s’engage à ne pas importer ou utiliser de contenu en
+            violation des droits d’auteur, droits voisins, ou autres lois en
+            vigueur dans son pays.
+          </p>
+          <p><strong>3. Avertissement sur la Légalité des Contenus</strong></p>
+          <p>
+            Le site ne conserve aucune donnée et n’a pas pour objectif de
+            permettre une utilisation illégale. Tout contenu doit être utilisé
+            dans le respect des lois applicables et ne doit enfreindre aucun
+            droit de propriété intellectuelle ou autre.
+          </p>
+          <p>
+            L’utilisateur est tenu de vérifier qu’il dispose des droits
+            nécessaires pour toute utilisation de contenu tiers sur la
+            plateforme.
+          </p>
+          <p><strong>4. Clause de Limitation de Responsabilité</strong></p>
+          <p>
+            Le site et ses créateurs ne peuvent en aucun cas être tenus
+            responsables de l’utilisation abusive ou illégale de l’outil par
+            l’utilisateur. En utilisant ce site, l’utilisateur reconnaît qu’il
+            est seul responsable de ses actions, et il exonère le site et ses
+            créateurs de toute responsabilité en cas d’infraction ou
+            d’utilisation non autorisée.
+          </p>
+        </div>
+        <button class="close-button" @click="showCGUModal = false">
+          Fermer
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -43,6 +148,8 @@ const items = ref([]);
 const selectedItem = ref(null);
 const fileInput = ref(null);
 const filesContainer = ref(null);
+const showCGUModal = ref(false);
+const showIntroModal = ref(true);
 
 const colors = [
   "#FF6B6B",
@@ -258,7 +365,106 @@ body {
   color: #ff4d4d;
 }
 
+.disclaimer {
+  color: white;
+  padding-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--background-light);
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  color: var(--text-color);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-body p {
+  margin-bottom: 1rem;
+}
+
+.close-button {
+  margin-top: 1rem;
+  background-color: var(--accent-color);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background-color: #7b3fd6;
+}
+
+.intro-step {
+  margin-bottom: 1.5rem;
+}
+
+.intro-step h3 {
+  color: var(--accent-color);
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.intro-step p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.intro-note {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.start-button {
+  margin-top: 1rem;
+  background-color: var(--accent-color);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+.start-button:hover {
+  background-color: #7b3fd6;
+}
 @media (max-width: 768px) {
+  .modal-content {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .intro-step h3 {
+    font-size: 1rem;
+  }
+
   .main-content {
     flex-direction: column;
   }
