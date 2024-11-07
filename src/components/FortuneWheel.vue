@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, watchEffect } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 
 const props = defineProps({
   items: {
@@ -68,37 +68,6 @@ loadAudio(tickSoundSrc).then((buffer) => {
 
 const sounds = ref({});
 
-watchEffect(() => {
-  sounds.value = {};
-  const promises = props.items.map(async (item) => {
-    if (item.sound) {
-      const audioBuffer = await loadAudio(item.sound);
-      sounds.value[item.label] = audioBuffer;
-    }
-  });
-  Promise.all(promises);
-});
-
-watch(volume, (newVolume) => {
-  gainNode.gain.value = newVolume;
-});
-
-const playTickSound = () => {
-  if (tickSoundBuffer) {
-    const source = audioContext.createBufferSource();
-    source.buffer = tickSoundBuffer;
-    source.connect(gainNode);
-    source.start(0);
-  }
-};
-
-const playSound = (audioBuffer) => {
-  const source = audioContext.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(gainNode);
-  source.start(0);
-};
-
 const drawArrow = (ctx, centerX, centerY) => {
   const arrowSize = 30;
 
@@ -122,6 +91,7 @@ const drawArrow = (ctx, centerX, centerY) => {
 };
 
 const drawWheel = () => {
+  if (!canvas.value) return; // Vérifier que canvas.value n'est pas null
   const ctx = canvas.value.getContext("2d");
   const centerX = size / 2;
   const centerY = size / 2;
@@ -166,9 +136,9 @@ const drawWheel = () => {
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 3;
 
-    // Tronquer le texte à 10 caractères et ajouter "..." si nécessaire
+    // Tronquer le texte à 15 caractères et ajouter "..." si nécessaire
     let labelText =
-      item.label.length > 15 ? item.label.substring(0, 17) + "..." : item.label;
+      item.label.length > 15 ? item.label.substring(0, 15) + "..." : item.label;
 
     ctx.strokeText(labelText, 20, 8);
     ctx.fillText(labelText, 20, 8);
@@ -176,6 +146,65 @@ const drawWheel = () => {
   });
 
   drawArrow(ctx, centerX, centerY);
+};
+
+onMounted(() => {
+  gainNode.gain.value = volume.value;
+  drawWheel();
+
+  watch(
+    () => props.items,
+    async () => {
+      // Recharger les sons
+      sounds.value = {};
+      const promises = props.items.map(async (item) => {
+        if (item.sound) {
+          const audioBuffer = await loadAudio(item.sound);
+          sounds.value[item.label] = audioBuffer;
+        }
+      });
+      await Promise.all(promises);
+
+      // Attendre que le DOM soit mis à jour
+      await nextTick();
+
+      // Vérifier que canvas.value est disponible
+      if (canvas.value) {
+        drawWheel();
+      }
+    },
+    { deep: true, flush: "post" }
+  );
+
+  const volumeControl = document.querySelector(
+    '.volume-control input[type="range"]'
+  );
+  if (volumeControl) {
+    volumeControl.style.setProperty(
+      "--volume-percentage",
+      `${volume.value * 100}%`
+    );
+  }
+});
+
+watch(volume, (newVolume) => {
+  gainNode.gain.value = newVolume;
+});
+
+const playTickSound = () => {
+  if (tickSoundBuffer) {
+    const source = audioContext.createBufferSource();
+    source.buffer = tickSoundBuffer;
+    source.connect(gainNode);
+    source.start(0);
+  }
+};
+
+const playSound = (audioBuffer) => {
+  const source = audioContext.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(gainNode);
+  source.start(0);
 };
 
 let lastSegment = null;
@@ -268,21 +297,6 @@ const spin = () => {
   }
   animationFrameId = requestAnimationFrame(animate);
 };
-
-onMounted(() => {
-  gainNode.gain.value = volume.value;
-  drawWheel();
-
-  const volumeControl = document.querySelector(
-    '.volume-control input[type="range"]'
-  );
-  if (volumeControl) {
-    volumeControl.style.setProperty(
-      "--volume-percentage",
-      `${volume.value * 100}%`
-    );
-  }
-});
 </script>
 
 <style scoped>
