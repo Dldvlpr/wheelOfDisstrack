@@ -16,6 +16,8 @@
               :style="{ backgroundColor: item.color }"
             ></div>
             <span class="file-name">{{ item.label }}</span>
+            <!-- Bouton de suppression -->
+            <button class="delete-button" @click="removeItem(index)">×</button>
           </div>
         </div>
         <input
@@ -91,6 +93,10 @@ const onFileChange = (event) => {
   const files = event.target.files;
   processFiles(files);
   event.target.value = "";
+};
+
+const removeItem = (index) => {
+  items.value.splice(index, 1);
 };
 </script>
 
@@ -214,6 +220,19 @@ body {
 .file-name {
   color: var(--text-color);
   font-size: 0.9rem;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.delete-button:hover {
+  color: #ff4d4d;
 }
 
 .main-content {
