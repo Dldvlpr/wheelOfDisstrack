@@ -1,11 +1,9 @@
 <template>
   <div class="app-container">
-    <header class="header">
-      <div class="logo">
-        <h1>Wheel Of</h1>
-        <h1>Sounds</h1>
-      </div>
-      <div class="upload-zone">
+    <main class="main-content">
+      <FortuneWheel :items="items" />
+
+      <div class="sidebar">
         <div class="upload-button" @click="triggerFileSelect">
           <span class="icon">+</span>
           <span>Add Sound</span>
@@ -30,10 +28,6 @@
           @change="onFileChange"
         />
       </div>
-    </header>
-
-    <main class="main-content">
-      <FortuneWheel :items="items" />
     </main>
   </div>
 </template>
@@ -79,13 +73,13 @@ const processFiles = (files) => {
 
         setTimeout(() => {
           if (filesContainer.value) {
-            filesContainer.value.scrollLeft = filesContainer.value.scrollWidth;
+            filesContainer.value.scrollTop = filesContainer.value.scrollHeight;
           }
         }, 100);
       };
       reader.readAsDataURL(file);
     } else {
-      alert("Please select audio files only.");
+      alert("Veuillez sélectionner uniquement des fichiers audio.");
     }
   }
 };
@@ -110,12 +104,6 @@ const removeItem = (index) => {
   --accent-color: #9147ff;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   padding: 0;
@@ -132,16 +120,6 @@ body {
   background-color: var(--background-dark);
 }
 
-.header {
-  background-color: var(--background-light);
-  padding: 1rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  height: 70px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 .logo h1 {
   text-align: center;
   color: var(--text-color);
@@ -150,12 +128,29 @@ body {
   margin: 0;
 }
 
-.upload-zone {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.main-content {
   flex: 1;
-  max-width: calc(100% - 200px);
+  display: flex;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.FortuneWheel {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sidebar {
+  width: 300px;
+  background-color: var(--background-light);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-y: auto;
 }
 
 .upload-button {
@@ -168,7 +163,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  white-space: nowrap;
+  justify-content: center;
 }
 
 .upload-button:hover {
@@ -182,16 +177,15 @@ body {
 
 .files-list {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  overflow-x: auto;
-  padding: 0.5rem;
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent-color) transparent;
-  max-width: 100%;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 0.5rem;
 }
 
 .files-list::-webkit-scrollbar {
-  height: 4px;
+  width: 6px;
 }
 
 .files-list::-webkit-scrollbar-track {
@@ -200,7 +194,7 @@ body {
 
 .files-list::-webkit-scrollbar-thumb {
   background-color: var(--accent-color);
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .file-item {
@@ -210,7 +204,6 @@ body {
   background-color: rgba(255, 255, 255, 0.1);
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  white-space: nowrap;
 }
 
 .file-color {
@@ -222,6 +215,10 @@ body {
 .file-name {
   color: var(--text-color);
   font-size: 0.9rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .delete-button {
@@ -230,19 +227,21 @@ body {
   color: var(--text-color);
   font-size: 1rem;
   cursor: pointer;
-  margin-left: 0.5rem;
 }
 
 .delete-button:hover {
   color: #ff4d4d;
 }
 
-.main-content {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-  overflow: hidden;
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }
 </style>

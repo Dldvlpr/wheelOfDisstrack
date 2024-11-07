@@ -47,7 +47,6 @@ let targetRotation = 0;
 const volume = ref(1);
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
 const gainNode = audioContext.createGain();
 gainNode.gain.value = volume.value;
 gainNode.connect(audioContext.destination);
@@ -76,8 +75,8 @@ const drawArrow = (ctx, centerX, centerY) => {
 
   ctx.beginPath();
   ctx.moveTo(0, -arrowSize / 2);
-  ctx.lineTo(-arrowSize, 0);
   ctx.lineTo(0, arrowSize / 2);
+  ctx.lineTo(-arrowSize, 0);
   ctx.closePath();
 
   ctx.fillStyle = "#FFFFFF";
@@ -91,7 +90,7 @@ const drawArrow = (ctx, centerX, centerY) => {
 };
 
 const drawWheel = () => {
-  if (!canvas.value) return; // Vérifier que canvas.value n'est pas null
+  if (!canvas.value) return;
   const ctx = canvas.value.getContext("2d");
   const centerX = size / 2;
   const centerY = size / 2;
@@ -107,7 +106,6 @@ const drawWheel = () => {
     ctx.strokeStyle = "#1a1a1a";
     ctx.lineWidth = 2;
     ctx.stroke();
-
     return;
   }
 
@@ -147,6 +145,19 @@ const drawWheel = () => {
   drawArrow(ctx, centerX, centerY);
 };
 
+const ARROW_ANGLE = 0;
+
+const getWinningIndex = (rotation) => {
+  const itemCount = props.items.length;
+  if (itemCount === 0) return -1;
+
+  const degrees =
+    ((((-rotation * 180) / Math.PI + ARROW_ANGLE) % 360) + 360) % 360;
+  const degreesPerItem = 360 / itemCount;
+
+  return (itemCount - Math.floor(degrees / degreesPerItem)) % itemCount;
+};
+
 onMounted(() => {
   gainNode.gain.value = volume.value;
   drawWheel();
@@ -154,7 +165,6 @@ onMounted(() => {
   watch(
     () => props.items,
     async () => {
-      // Recharger les sons
       sounds.value = {};
       const promises = props.items.map(async (item) => {
         if (item.sound) {
@@ -163,11 +173,7 @@ onMounted(() => {
         }
       });
       await Promise.all(promises);
-
-      // Attendre que le DOM soit mis à jour
       await nextTick();
-
-      // Vérifier que canvas.value est disponible
       if (canvas.value) {
         drawWheel();
       }
@@ -200,6 +206,7 @@ const playTickSound = () => {
 };
 
 const playSound = (audioBuffer) => {
+  if (!audioBuffer) return;
   const source = audioContext.createBufferSource();
   source.buffer = audioBuffer;
   source.connect(gainNode);
@@ -221,11 +228,7 @@ const animate = (currentTime) => {
     const progress = easing(elapsed / spinDuration);
     rotation.value = progress * targetRotation;
 
-    const degreesPerItem = 360 / props.items.length;
-    const normalizedRotation =
-      ((((-rotation.value * 180) / Math.PI) % 360) + 360) % 360;
-    const currentSegment = Math.floor(normalizedRotation / degreesPerItem);
-
+    const currentSegment = getWinningIndex(rotation.value);
     if (currentSegment !== lastSegment) {
       const timeSinceLastTick = currentTime - lastTickTime;
       if (timeSinceLastTick > 75) {
@@ -240,18 +243,12 @@ const animate = (currentTime) => {
   } else {
     isSpinning.value = false;
     canvas.value.classList.remove("disabled");
-
     rotation.value = targetRotation;
     drawWheel();
 
-    const degreesPerItem = 360 / props.items.length;
-    const normalizedRotation =
-      ((((-rotation.value * 180) / Math.PI) % 360) + 360) % 360;
-    const winningIndex =
-      Math.floor(normalizedRotation / degreesPerItem) % props.items.length;
-
+    const winningIndex = getWinningIndex(rotation.value);
     const winningItem = props.items[winningIndex];
-    if (winningItem.sound && sounds.value[winningItem.label]) {
+    if (winningItem?.sound && sounds.value[winningItem.label]) {
       playSound(sounds.value[winningItem.label]);
     }
   }
