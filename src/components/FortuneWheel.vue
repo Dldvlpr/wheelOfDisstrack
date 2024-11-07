@@ -71,7 +71,7 @@ const drawArrow = (ctx, centerX, centerY) => {
   const arrowSize = 30;
 
   ctx.save();
-  ctx.translate(centerX + size / 2 - 10, centerY);
+  ctx.translate(centerX + size / 2 - arrowSize, centerY);
 
   ctx.beginPath();
   ctx.moveTo(0, -arrowSize / 2);
@@ -81,7 +81,6 @@ const drawArrow = (ctx, centerX, centerY) => {
 
   ctx.fillStyle = "#FFFFFF";
   ctx.fill();
-
   ctx.strokeStyle = "#000000";
   ctx.lineWidth = 2;
   ctx.stroke();
@@ -145,17 +144,18 @@ const drawWheel = () => {
   drawArrow(ctx, centerX, centerY);
 };
 
-const ARROW_ANGLE = 0;
-
 const getWinningIndex = (rotation) => {
   const itemCount = props.items.length;
   if (itemCount === 0) return -1;
 
-  const degrees =
-    ((((-rotation * 180) / Math.PI + ARROW_ANGLE) % 360) + 360) % 360;
-  const degreesPerItem = 360 / itemCount;
+  const normalizedRotation = rotation % (2 * Math.PI);
+  const positiveRotation =
+    normalizedRotation < 0
+      ? normalizedRotation + 2 * Math.PI
+      : normalizedRotation;
+  const anglePerItem = (2 * Math.PI) / itemCount;
 
-  return (itemCount - Math.floor(degrees / degreesPerItem)) % itemCount;
+  return Math.floor(positiveRotation / anglePerItem) % itemCount;
 };
 
 onMounted(() => {
