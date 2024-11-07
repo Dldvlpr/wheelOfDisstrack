@@ -81,7 +81,6 @@ watchEffect(() => {
 
 watch(volume, (newVolume) => {
   gainNode.gain.value = newVolume;
-  //  playTickSound();
 });
 
 const playTickSound = () => {
@@ -161,13 +160,18 @@ const drawWheel = () => {
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(startAngle + anglePerItem / 2);
-    ctx.textAlign = "right";
+    ctx.textAlign = "left";
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "bold 20px Arial";
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 3;
-    ctx.strokeText(item.label, radius - 30, 8);
-    ctx.fillText(item.label, radius - 30, 8);
+
+    // Tronquer le texte à 10 caractères et ajouter "..." si nécessaire
+    let labelText =
+      item.label.length > 15 ? item.label.substring(0, 17) + "..." : item.label;
+
+    ctx.strokeText(labelText, 20, 8);
+    ctx.fillText(labelText, 20, 8);
     ctx.restore();
   });
 
