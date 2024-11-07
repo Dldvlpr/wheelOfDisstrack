@@ -2,7 +2,8 @@
   <div class="app-container">
     <header class="header">
       <div class="logo">
-        <h1>Wheel Of Sounds</h1>
+        <h1>Wheel Of</h1>
+        <h1>Sounds</h1>
       </div>
       <div class="upload-zone">
         <div class="upload-button" @click="triggerFileSelect">
@@ -142,6 +143,7 @@ body {
 }
 
 .logo h1 {
+  text-align: center;
   color: var(--text-color);
   font-size: 1.5rem;
   font-weight: 600;
