@@ -60,13 +60,6 @@ const loadAudio = async (url) => {
   return audioBuffer;
 };
 
-import tickSoundSrc from "@/assets/sound/click.mp3";
-let tickSoundBuffer = null;
-
-loadAudio(tickSoundSrc).then((buffer) => {
-  tickSoundBuffer = buffer;
-});
-
 const sounds = ref({});
 
 const drawArrow = (ctx, centerX, centerY) => {
@@ -198,15 +191,6 @@ watch(volume, (newVolume) => {
   gainNode.gain.value = newVolume;
 });
 
-const playTickSound = () => {
-  if (tickSoundBuffer) {
-    const source = audioContext.createBufferSource();
-    source.buffer = tickSoundBuffer;
-    source.connect(gainNode);
-    source.start(0);
-  }
-};
-
 const playSound = (audioBuffer) => {
   if (!audioBuffer) return;
   const source = audioContext.createBufferSource();
@@ -216,7 +200,6 @@ const playSound = (audioBuffer) => {
 };
 
 let lastSegment = null;
-let lastTickTime = 0;
 
 const animate = (currentTime) => {
   if (!startTime) startTime = currentTime;
@@ -232,11 +215,6 @@ const animate = (currentTime) => {
 
     const currentSegment = getWinningIndex(rotation.value);
     if (currentSegment !== lastSegment) {
-      const timeSinceLastTick = currentTime - lastTickTime;
-      if (timeSinceLastTick > 75) {
-        playTickSound();
-        lastTickTime = currentTime;
-      }
       lastSegment = currentSegment;
     }
 
@@ -265,7 +243,6 @@ const spin = () => {
 
   startTime = null;
   lastSegment = null;
-  lastTickTime = 0;
 
   const minSpins = 6;
   const maxSpins = 12;
