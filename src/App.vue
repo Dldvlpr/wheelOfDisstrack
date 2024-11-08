@@ -85,13 +85,11 @@
       </div>
     </div>
 
-    <!-- Modal CGU existante -->
     <div
       v-if="showCGUModal"
       class="modal-overlay"
       @click.self="showCGUModal = false"
     >
-      <!-- Contenu CGU existant -->
       <div class="modal-content">
         <h2>Conditions Générales d'Utilisation</h2>
         <div class="modal-body">
