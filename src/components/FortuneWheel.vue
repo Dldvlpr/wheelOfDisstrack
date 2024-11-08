@@ -22,6 +22,10 @@
         @click="spin"
       ></canvas>
     </div>
+
+    <button class="stop-button" :disabled="!isPlaying" @click="stopSound">
+      Stop
+    </button>
   </div>
 </template>
 
@@ -41,12 +45,13 @@ const canvas = ref(null);
 const size = 500;
 const rotation = ref(0);
 const isSpinning = ref(false);
+const isPlaying = ref(false);
 const spinDuration = 5000;
+const volume = ref(1);
 let animationFrameId = null;
 let startTime = null;
 let targetRotation = 0;
-
-const volume = ref(1);
+let currentSource = null;
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const gainNode = audioContext.createGain();
@@ -61,6 +66,14 @@ const loadAudio = async (url) => {
 };
 
 const sounds = ref({});
+
+const stopSound = () => {
+  if (currentSource) {
+    currentSource.stop();
+    currentSource = null;
+    isPlaying.value = false;
+  }
+};
 
 const drawArrow = (ctx, centerX, centerY) => {
   const arrowSize = 30;
@@ -193,10 +206,19 @@ watch(volume, (newVolume) => {
 
 const playSound = (audioBuffer) => {
   if (!audioBuffer) return;
+  stopSound();
+
   const source = audioContext.createBufferSource();
   source.buffer = audioBuffer;
   source.connect(gainNode);
   source.start(0);
+  currentSource = source;
+  isPlaying.value = true;
+
+  source.onended = () => {
+    isPlaying.value = false;
+    currentSource = null;
+  };
 };
 
 let lastSegment = null;
@@ -391,6 +413,31 @@ canvas.disabled {
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
+.stop-button {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 10px 20px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.stop-button:hover:not(:disabled) {
+  background-color: #ff0000;
+}
+
+.stop-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 @media (max-width: 768px) {
   .volume-control {
     left: 10px;
@@ -399,6 +446,10 @@ canvas.disabled {
 
   .volume-control input[type="range"] {
     height: 100px;
+  }
+
+  .stop-button {
+    right: 10px;
   }
 }
 </style>
